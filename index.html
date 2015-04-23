@@ -38,11 +38,29 @@
         return col;
     };
 
+    var Turn = function(angle, rate){
+        this.angle = angle;
+        this.rate = rate;
+        this.current = 0;
+        this.done = false;
+    };
+    Turn.prototype.update = function(){
+        this.current += this.rate;
+        if(this.current >= this.angle){
+            this.done = true;
+            var amt = this.rate - (this.current - this.angle);
+            this.current = this.angle;
+            return amt;
+        }
+        return this.rate;
+    };
+
     var Pipe = function(r, v){
         this.r = r;
         this.v = v;
         this.onUpateView = function(){};
         this.allowedAngles = [90, -90];
+        this.turnQueue = [];
     };
     Pipe.prototype.move = function(width, height){
         var begin = [this.r[0], this.r[1]];
@@ -61,15 +79,18 @@
         if(this.r[1] < 0)
             this.r[1] += height;
 
-        if(Math.random() < 0.02){
-            var angle = this.allowedAngles[
-                Math.floor(Math.random() * this.allowedAngles.length)
-            ];
+        if(this.turnQueue.length > 0){
+            var angle = this.turnQueue[0].update();
             angle = angle / 180 * Math.PI;
             var vx = this.v[0] * Math.cos(angle) - this.v[1] * Math.sin(angle);
             var vy = this.v[0] * Math.sin(angle) + this.v[1] * Math.cos(angle);
             this.v = [vx, vy];
+            if(this.turnQueue[0].done)
+                this.turnQueue.shift();
         }
+    };
+    Pipe.prototype.beginTurn = function(turn){
+        this.turnQueue.push(turn);
     };
 
     var PipeView = function(pipe){
@@ -115,6 +136,9 @@
     function animate() {
         for(var i = 0; i < 20; i++){
             pipes[i].move(620, 380);
+            if(Math.random() < 0.02){
+                pipes[i].beginTurn(new Turn(90, 10));
+            }
         }
 
         renderer.render(stage);
