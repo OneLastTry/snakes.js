@@ -1,0 +1,127 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <title>pixi.js example 13 - Graphics</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #000000;
+        }
+    </style>
+
+    <script src="pixi.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/randomcolor/0.1.1/randomColor.min.js"></script>
+
+</head>
+<body>
+    <script>
+
+    function randomRightAngleDirection(){
+        var dirs = [[5,0], [-5,0], [0,5], [0,-5]];
+        return dirs[Math.floor(Math.random() * dirs.length)];
+    };
+
+    function randomStartPoint(width, height){
+        return [
+            Math.floor(Math.random() * width),
+            Math.floor(Math.random() * height)
+        ];
+    };
+
+    function getRandomColour(){
+        var col = 0;
+        var arr = randomColor({format: 'rgbArray'});
+        col |= (arr[0] << 16);
+        col |= (arr[1] << 8 );
+        col |= (arr[2] << 0 );
+        return col;
+    };
+
+    var Pipe = function(r, v){
+        this.r = r;
+        this.v = v;
+        this.onUpateView = function(){};
+        this.allowedAngles = [90, -90];
+    };
+    Pipe.prototype.move = function(width, height){
+        var begin = [this.r[0], this.r[1]];
+
+        this.r[0] += this.v[0];
+        this.r[1] += this.v[1];
+        this.onUpateView(begin, this.r);
+
+        if(this.r[0] >= width)
+            this.r[0] -= width;
+        if(this.r[0] < 0)
+            this.r[0] += width;
+
+        if(this.r[1] >= height)
+            this.r[1] -= height;
+        if(this.r[1] < 0)
+            this.r[1] += height;
+
+        if(Math.random() < 0.02){
+            var angle = this.allowedAngles[
+                Math.floor(Math.random() * this.allowedAngles.length)
+            ];
+            angle = angle / 180 * Math.PI;
+            var vx = this.v[0] * Math.cos(angle) - this.v[1] * Math.sin(angle);
+            var vy = this.v[0] * Math.sin(angle) + this.v[1] * Math.cos(angle);
+            this.v = [vx, vy];
+        }
+    };
+
+    var PipeView = function(pipe){
+        this.pipe = pipe;
+        this.colour = getRandomColour();
+        this.graphics = new PIXI.Graphics();
+        this.graphics.moveTo(pipe.r[0], pipe.r[1]);
+    };
+    PipeView.prototype.update = function(from, to){
+        this.graphics.lineStyle(5, this.colour, 0.5);
+        this.graphics.moveTo(from[0], from[1]);
+        this.graphics.lineTo(to[0], to[1]);
+    };
+
+
+    // create an new instance of a pixi stage
+    var stage = new PIXI.Stage(0xFFFFFF, true);
+    var renderer = PIXI.autoDetectRenderer(620, 380);
+    renderer.view.style.display = "block";
+    document.body.appendChild(renderer.view);
+
+    function initPipe(){
+        var p  = new Pipe(randomStartPoint(620, 380), randomRightAngleDirection());
+        var pview = new PipeView(p);
+
+        p.onUpateView = function(from, to){pview.update(from, to)};
+        pview.graphics.position.x = 0;
+        pview.graphics.position.y = 0;
+
+        stage.addChild(pview.graphics);
+        return p;
+    }
+
+    var pipes = [];
+    for(var i = 0; i < 20; i++){
+        var p = initPipe();
+        pipes.push(p);
+    }
+
+
+    requestAnimFrame(animate);
+
+    function animate() {
+        for(var i = 0; i < 20; i++){
+            pipes[i].move(620, 380);
+        }
+
+        renderer.render(stage);
+        requestAnimFrame( animate );
+    }
+
+    </script>
+
+    </body>
+</html>
